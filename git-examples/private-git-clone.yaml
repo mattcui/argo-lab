@@ -5,15 +5,35 @@ kind: Workflow
 metadata:
   generateName: input-artifact-git-
 spec:
-  entrypoint: git-clone
+  entrypoint: main
   templates:
+  - name: main
+    steps:
+      - - name: git-clone
+          template: git-clone
+          arguments:
+            parameters:
+              - name: param
+                value: "-Message 'Matt Cui'"
+              - name: git-url
+                value: "git@github.com:nordcloud/supermaestro-kone-spn-automation.git"
+              - name: file
+                value: "create-text-file.ps1"
+              - name: work-dir
+                value: "scripts"
+
   - name: git-clone
     inputs:
+      parameters:
+      - name: param
+      - name: git-url
+      - name: file
+      - name: work-dir
       artifacts:
-      - name: argo-source
+      - name: pwsh-source
         path: /src
         git:
-          repo: git@github.com:nordcloud/supermaestro-kone-spn-automation.git
+          repo: "{{inputs.parameters.git-url}}"
           # revision: "v2.1.1"
           # For private repositories, create a k8s secret containing the git credentials and
           # reference the secret keys in the secret selectors: usernameSecret, passwordSecret,
@@ -53,7 +73,8 @@ spec:
           singleBranch: true
           branch: matt-test
     container:
-      image: mcr.microsoft.com/azure-powershell:8.3.0-ubuntu-22.04
+      # image: mcr.microsoft.com/azure-powershell:8.3.0-ubuntu-22.04
+      image: mattcui/azure-powershell:8.3.0-ubuntu-22.04-sm
       command: ["bash", "-c"]
-      args: ["pwsh -f create-text-file.ps1"]
-      workingDir: /src
+      args: ["pwsh -f {{inputs.parameters.file}} {{inputs.parameters.param}}"]
+      workingDir: /src/{{inputs.parameters.work-dir}}
